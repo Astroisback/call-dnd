@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Look up whether an incoming caller is a saved contact. -->
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <!-- Dial MMI codes (**61*, **67*, **21*) to set carrier forwarding rules. -->
+    <uses-permission android:name="android.permission.CALL_PHONE" />
+
+    <application
+        android:label="Call DND"
+        android:icon="@android:drawable/ic_lock_silent_mode"
+        android:allowBackup="false"
+        android:supportsRtl="true">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:label="Call DND">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".ForwardingActivity"
+            android:exported="false"
+            android:label="Voicemail rules" />
+
+        <!-- Telecom binds this while we hold the CALL_SCREENING role.
+             BIND_SCREENING_SERVICE is held by the system, not requested by us. -->
+        <service
+            android:name=".RejectScreeningService"
+            android:exported="true"
+            android:permission="android.permission.BIND_SCREENING_SERVICE">
+            <intent-filter>
+                <action android:name="android.telecom.CallScreeningService" />
+            </intent-filter>
+        </service>
+
+        <!-- Tile 1: cycle screening modes (off / unknown / all / reject all). -->
+        <service
+            android:name=".ScreeningTileService"
+            android:exported="true"
+            android:icon="@android:drawable/ic_lock_silent_mode"
+            android:label="Call DND"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <!-- Tile 2: unconditional forwarding, everything straight to voicemail. -->
+        <service
+            android:name=".ModeTileService"
+            android:exported="true"
+            android:icon="@android:drawable/ic_menu_call"
+            android:label="Voicemail"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+    </application>
+</manifest>
