@@ -91,7 +91,12 @@ final class Forwarding {
      * network. '#' has to be percent-encoded or it is parsed as a URI fragment.
      */
     private static void dial(Context ctx, String mmi) {
-        Uri uri = Uri.fromParts("tel", mmi, null);
+        // Use Uri.parse and manually encode the '#' symbol. 
+        // Uri.fromParts percent-encodes the '+' to '%2B', which causes the dialer
+        // to strip the '+' entirely and show an invalid number.
+        String encodedMmi = mmi.replace("#", "%23");
+        Uri uri = Uri.parse("tel:" + encodedMmi);
+        
         // Using ACTION_DIAL so the dialer opens and the user can initiate the code.
         // This avoids crashes if the CALL_PHONE permission wasn't granted at runtime.
         Intent intent = new Intent(Intent.ACTION_DIAL, uri);
