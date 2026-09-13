@@ -92,7 +92,9 @@ final class Forwarding {
      */
     private static void dial(Context ctx, String mmi) {
         Uri uri = Uri.fromParts("tel", mmi, null);
-        Intent intent = new Intent(Intent.ACTION_CALL, uri);
+        // Using ACTION_DIAL so the dialer opens and the user can initiate the code.
+        // This avoids crashes if the CALL_PHONE permission wasn't granted at runtime.
+        Intent intent = new Intent(Intent.ACTION_DIAL, uri);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         ctx.startActivity(intent);
     }
