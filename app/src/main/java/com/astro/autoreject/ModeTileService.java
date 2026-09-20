@@ -33,15 +33,7 @@ public class ModeTileService extends TileService {
 
         unlockAndRun(() -> {
             // Flip the Game Space reject flag.
-            try {
-                boolean ok = Settings.System.putInt(
-                        getContentResolver(), "voice_call_reject_mode", turningOn ? 1 : 0);
-                android.util.Log.e("CallDND", "voice_call_reject_mode=" + (turningOn ? 1 : 0) + " ok=" + ok);
-            } catch (Exception e) {
-                android.util.Log.e("CallDND", "putInt failed", e);
-                android.widget.Toast.makeText(this,
-                        "FAILED: " + e.getMessage(), android.widget.Toast.LENGTH_LONG).show();
-            }
+            setGameSpaceReject(turningOn);
 
             if (turningOn) {
                 // Bring the app to the foreground so Game Space sees a "game".
@@ -54,6 +46,25 @@ public class ModeTileService extends TileService {
             Prefs.setForwardingOn(this, turningOn);
             render();
         });
+    }
+
+    private void setGameSpaceReject(boolean on) {
+        // voice_call_reject_mode is on OEM's protected list — Settings.System.putInt
+        // throws "You cannot keep your settings in the secure settings" for normal apps.
+        // Use raw ContentResolver insert on the settings URI as a workaround.
+        try {
+            android.content.ContentValues cv = new android.content.ContentValues(2);
+            cv.put("name", "voice_call_reject_mode");
+            cv.put("value", on ? "1" : "0");
+            getContentResolver().insert(
+                    android.net.Uri.parse("content://settings/system"), cv);
+            android.util.Log.i("CallDND", "insert voice_call_reject_mode=" + (on ? 1 : 0));
+        } catch (Exception e) {
+            android.util.Log.e("CallDND", "insert failed", e);
+            android.widget.Toast.makeText(this,
+                    "Cannot write setting: " + e.getMessage(),
+                    android.widget.Toast.LENGTH_LONG).show();
+        }
     }
 
     private void render() {
