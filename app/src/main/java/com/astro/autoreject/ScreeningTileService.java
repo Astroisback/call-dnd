@@ -27,8 +27,16 @@ public class ScreeningTileService extends TileService {
         super.onClick();
         int next = Prefs.nextMode(this);
         Prefs.setMode(this, next);
-        // Flip the Game Space reject flag so the OS rejects calls while our app is fg.
         setGameSpaceReject(Prefs.isActive(next));
+
+        if (Prefs.isActive(next)) {
+            // Bring the app to the foreground so Game Space sees a "game" running.
+            android.content.Intent launch = new android.content.Intent(this, MainActivity.class);
+            launch.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+                    | android.content.Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+            startActivityAndCollapse(launch);
+        }
+
         render();
     }
 
