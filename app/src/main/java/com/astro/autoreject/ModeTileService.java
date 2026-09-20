@@ -1,18 +1,21 @@
 package com.astro.autoreject;
 
 import android.graphics.drawable.Icon;
+import android.provider.Settings;
 import android.service.quicksettings.Tile;
 import android.service.quicksettings.TileService;
 
 /**
- * Quick Settings tile: "Voicemail". Sits next to the DND tile.
+ * Quick Settings tile: "Voicemail". Single on/off toggle.
  *
- * ON  -> unconditional forwarding, so the network answers before the phone rings and
- *        the caller hears the greeting and can leave a message.
- * OFF -> cancels unconditional forwarding, restoring the normal 30s no-reply rule.
+ * ON  -> flips voice_call_reject_mode=1 (Game Space call reject) and brings the app
+ *        to the foreground so the OS sees a "game" running. All calls get rejected.
+ * OFF -> flips voice_call_reject_mode=0. Calls ring normally.
  *
- * A screening-service reject is deliberately NOT used: it disconnects instantly, so the
- * carrier's 30s no-reply timer never elapses and the caller never reaches voicemail.
+ * The secure/global Game Space flags must be armed once via adb (they persist):
+ *   settings put secure oplus_games_not_disturb_switch_key 3
+ *   settings put global disturb_for_game_space_mode_flag 3
+ *   settings put global disturb_for_game_space_mode 0
  */
 public class ModeTileService extends TileService {
 
@@ -27,16 +30,27 @@ public class ModeTileService extends TileService {
         super.onClick();
 
         final boolean turningOn = !Prefs.isForwardingOn(this);
-        final String number = Prefs.getVoicemailNumber(this);
 
-        // Dialling an MMI code starts an activity, which needs the shade collapsed.
         unlockAndRun(() -> {
-            if (turningOn) {
-                Forwarding.enableAll(this, number);
-            } else {
-                Forwarding.disableAll(this);
+            // Flip the Game Space reject flag.
+            try {
+                boolean ok = Settings.System.putInt(
+                        getContentResolver(), "voice_call_reject_mode", turningOn ? 1 : 0);
+                android.util.Log.e("CallDND", "voice_call_reject_mode=" + (turningOn ? 1 : 0) + " ok=" + ok);
+            } catch (Exception e) {
+                android.util.Log.e("CallDND", "putInt failed", e);
+                android.widget.Toast.makeText(this,
+                        "FAILED: " + e.getMessage(), android.widget.Toast.LENGTH_LONG).show();
             }
-            // Optimistic; the network shows its own confirmation dialog.
+
+            if (turningOn) {
+                // Bring the app to the foreground so Game Space sees a "game".
+                android.content.Intent launch = new android.content.Intent(this, MainActivity.class);
+                launch.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+                        | android.content.Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                startActivity(launch);
+            }
+
             Prefs.setForwardingOn(this, turningOn);
             render();
         });
@@ -51,7 +65,7 @@ public class ModeTileService extends TileService {
         boolean on = Prefs.isForwardingOn(this);
         tile.setState(on ? Tile.STATE_ACTIVE : Tile.STATE_INACTIVE);
         tile.setLabel("Voicemail");
-        tile.setSubtitle(on ? "All calls" : "Off");
+        tile.setSubtitle(on ? "Rejecting calls" : "Off");
         tile.setIcon(Icon.createWithResource(this, on
                 ? android.R.drawable.ic_lock_silent_mode
                 : android.R.drawable.ic_menu_call));
