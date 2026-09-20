@@ -25,11 +25,13 @@ public class ScreeningTileService extends TileService {
     @Override
     public void onClick() {
         super.onClick();
-        int next = Prefs.nextMode(this);
+        // Simple on/off toggle instead of cycling through 4 modes.
+        boolean wasActive = Prefs.getMode(this) != Prefs.MODE_OFF;
+        int next = wasActive ? Prefs.MODE_OFF : Prefs.MODE_ALL;
         Prefs.setMode(this, next);
-        setGameSpaceReject(Prefs.isActive(next));
+        setGameSpaceReject(!wasActive);
 
-        if (Prefs.isActive(next)) {
+        if (!wasActive) {
             // Bring the app to the foreground so Game Space sees a "game" running.
             android.content.Intent launch = new android.content.Intent(this, MainActivity.class);
             launch.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK
