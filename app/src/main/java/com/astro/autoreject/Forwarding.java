@@ -91,12 +91,22 @@ final class Forwarding {
      * network. '#' has to be percent-encoded or it is parsed as a URI fragment.
      */
     private static void dial(Context ctx, String mmi) {
-        // Encode both '+' and '#' — Uri.parse strips '+' from mid-string positions
-        // in tel: URIs, and '#' is treated as a fragment separator.
-        String encoded = mmi.replace("+", "%2B").replace("#", "%23");
+        // '#' must be encoded or Uri.parse treats it as a fragment separator.
+        // '+' is kept as-is — it's the international dialing prefix.
+        String encoded = mmi.replace("#", "%23");
         Uri uri = Uri.parse("tel:" + encoded);
-        Intent intent = new Intent(Intent.ACTION_DIAL, uri);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        ctx.startActivity(intent);
+
+        if (ctx.checkSelfPermission(android.Manifest.permission.CALL_PHONE)
+                == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            // ACTION_CALL fires the MMI code directly, no user tap needed.
+            Intent intent = new Intent(Intent.ACTION_CALL, uri);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            ctx.startActivity(intent);
+        } else {
+            // Fallback: open dialer with the code pre-filled.
+            Intent intent = new Intent(Intent.ACTION_DIAL, uri);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            ctx.startActivity(intent);
+        }
     }
 }

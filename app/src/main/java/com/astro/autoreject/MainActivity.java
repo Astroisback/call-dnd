@@ -5,7 +5,9 @@ import android.app.Activity;
 import android.app.role.RoleManager;
 import android.content.Intent;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
@@ -39,6 +41,8 @@ public class MainActivity extends Activity {
         root.addView(spacer());
         root.addView(button("Grant screening role", v -> requestRole()));
         root.addView(button("Allow contacts access", v -> requestContacts()));
+        root.addView(button("Allow phone calls (for MMI codes)", v -> requestCallPhone()));
+        root.addView(button("Allow modify settings (for Game Space reject)", v -> requestWriteSettings()));
 
         root.addView(spacer());
         root.addView(button("Mode: Off", v -> setMode(Prefs.MODE_OFF)));
@@ -84,11 +88,18 @@ public class MainActivity extends Activity {
         boolean held = rm != null && rm.isRoleHeld(RoleManager.ROLE_CALL_SCREENING);
         boolean contacts = checkSelfPermission(Manifest.permission.READ_CONTACTS)
                 == android.content.pm.PackageManager.PERMISSION_GRANTED;
+        boolean callPhone = checkSelfPermission(Manifest.permission.CALL_PHONE)
+                == android.content.pm.PackageManager.PERMISSION_GRANTED;
+        boolean writeSettings = Settings.System.canWrite(this);
 
         status.setText("Screening role: " + (held ? "granted" : "NOT granted")
                 + "\nContacts access: " + (contacts ? "granted" : "not granted")
+                + "\nPhone calls: " + (callPhone ? "granted" : "not granted")
+                + "\nModify settings: " + (writeSettings ? "granted" : "not granted")
                 + "\nCurrent mode: " + Prefs.label(Prefs.getMode(this))
-                + (held ? "" : "\n\nWithout the screening role nothing will be rejected."));
+                + "\n\nAdd this app to Game Space, then when the app is in the "
+                + "foreground and a DND mode is active, all incoming calls will be "
+                + "rejected at the system level.");
     }
 
     private void requestRole() {
@@ -102,6 +113,19 @@ public class MainActivity extends Activity {
 
     private void requestContacts() {
         requestPermissions(new String[]{Manifest.permission.READ_CONTACTS}, REQ_CONTACTS);
+    }
+
+    private void requestCallPhone() {
+        requestPermissions(new String[]{Manifest.permission.CALL_PHONE}, 3);
+    }
+
+    private void requestWriteSettings() {
+        if (!Settings.System.canWrite(this)) {
+            Intent intent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS,
+                    Uri.parse("package:" + getPackageName()));
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+        }
     }
 
     @Override
