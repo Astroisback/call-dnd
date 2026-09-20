@@ -44,12 +44,15 @@ public class ScreeningTileService extends TileService {
 
     private void setGameSpaceReject(boolean on) {
         try {
-            // Only voice_call_reject_mode lives in Settings.System and is writable
-            // with WRITE_SETTINGS. The other two flags (oplus_games_not_disturb_switch_key
-            // and disturb_for_game_space_mode_flag) are in secure/global and need
-            // WRITE_SECURE_SETTINGS — set them once via adb, they persist across reboots.
-            Settings.System.putInt(getContentResolver(), "voice_call_reject_mode", on ? 1 : 0);
-        } catch (Exception ignored) {
+            boolean ok = Settings.System.putInt(getContentResolver(), "voice_call_reject_mode", on ? 1 : 0);
+            android.util.Log.e("CallDND", "putInt voice_call_reject_mode=" + (on ? 1 : 0) + " result=" + ok);
+            android.widget.Toast.makeText(this,
+                    "voice_call_reject_mode → " + (on ? "1" : "0") + " (ok=" + ok + ")",
+                    android.widget.Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            android.util.Log.e("CallDND", "setGameSpaceReject failed", e);
+            android.widget.Toast.makeText(this,
+                    "FAILED: " + e.getMessage(), android.widget.Toast.LENGTH_LONG).show();
         }
     }
 
