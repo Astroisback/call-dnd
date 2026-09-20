@@ -42,12 +42,12 @@ public class ScreeningTileService extends TileService {
 
     private void setGameSpaceReject(boolean on) {
         try {
+            // Only voice_call_reject_mode lives in Settings.System and is writable
+            // with WRITE_SETTINGS. The other two flags (oplus_games_not_disturb_switch_key
+            // and disturb_for_game_space_mode_flag) are in secure/global and need
+            // WRITE_SECURE_SETTINGS — set them once via adb, they persist across reboots.
             Settings.System.putInt(getContentResolver(), "voice_call_reject_mode", on ? 1 : 0);
-            Settings.Secure.putInt(getContentResolver(), "oplus_games_not_disturb_switch_key", on ? 3 : 0);
-            Settings.Global.putInt(getContentResolver(), "disturb_for_game_space_mode_flag", on ? 3 : 0);
-            Settings.Global.putInt(getContentResolver(), "disturb_for_game_space_mode", 0);
         } catch (Exception ignored) {
-            // WRITE_SETTINGS or WRITE_SECURE_SETTINGS may not be granted.
         }
     }
 
