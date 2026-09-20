@@ -43,6 +43,7 @@ public class MainActivity extends Activity {
         root.addView(button("Allow contacts access", v -> requestContacts()));
         root.addView(button("Allow phone calls (for MMI codes)", v -> requestCallPhone()));
         root.addView(button("Allow modify settings (for Game Space reject)", v -> requestWriteSettings()));
+        root.addView(button("Allow display over other apps", v -> requestOverlay()));
 
         root.addView(spacer());
         root.addView(button("Mode: Off", v -> setMode(Prefs.MODE_OFF)));
@@ -91,11 +92,13 @@ public class MainActivity extends Activity {
         boolean callPhone = checkSelfPermission(Manifest.permission.CALL_PHONE)
                 == android.content.pm.PackageManager.PERMISSION_GRANTED;
         boolean writeSettings = Settings.System.canWrite(this);
+        boolean overlay = Settings.canDrawOverlays(this);
 
         status.setText("Screening role: " + (held ? "granted" : "NOT granted")
                 + "\nContacts access: " + (contacts ? "granted" : "not granted")
                 + "\nPhone calls: " + (callPhone ? "granted" : "not granted")
                 + "\nModify settings: " + (writeSettings ? "granted" : "not granted")
+                + "\nOverlay: " + (overlay ? "granted" : "not granted")
                 + "\nCurrent mode: " + Prefs.label(Prefs.getMode(this))
                 + "\n\nAdd this app to Game Space, then when the app is in the "
                 + "foreground and a DND mode is active, all incoming calls will be "
@@ -122,6 +125,15 @@ public class MainActivity extends Activity {
     private void requestWriteSettings() {
         if (!Settings.System.canWrite(this)) {
             Intent intent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS,
+                    Uri.parse("package:" + getPackageName()));
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+        }
+    }
+
+    private void requestOverlay() {
+        if (!Settings.canDrawOverlays(this)) {
+            Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
                     Uri.parse("package:" + getPackageName()));
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(intent);

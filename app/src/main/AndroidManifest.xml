@@ -7,6 +7,8 @@
     <uses-permission android:name="android.permission.CALL_PHONE" />
     <!-- Flip voice_call_reject_mode so Game Space's call blocker activates. -->
     <uses-permission android:name="android.permission.WRITE_SETTINGS" />
+    <!-- Draw over other apps, same as Game Space does when active. -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
     <application
         android:label="Call DND"
